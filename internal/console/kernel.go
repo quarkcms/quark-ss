@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"reflect"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/quarkcms/quark-go/internal/console/commands"
@@ -68,6 +69,8 @@ func (p *Kernel) keepRunningCommand(assets fs.FS) {
 
 	// 监听输入
 	for {
+		time.Sleep(time.Duration(500) * time.Millisecond)
+
 		fmt.Scanln(&command)
 		for _, v := range Commands {
 
