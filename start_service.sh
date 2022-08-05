@@ -37,5 +37,5 @@ else
     
     echo Start Success!
     sleep 2
-    # tail -f $PROJECT_PATH$PROJECT_LOG_NAME
+    tail -f $PROJECT_PATH$PROJECT_LOG_NAME
 fi
