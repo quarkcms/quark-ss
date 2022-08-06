@@ -50,7 +50,7 @@ func (p *Seed) configTableSeeder() {
 // 菜单表
 func (p *Seed) menuTableSeeder() {
 	seeders := []models.Menu{
-		{Id: 1, Name: "控制台", GuardName: "admin", Icon: "icon-home", Type: "default", Pid: 0, Sort: 0, Path: "/dashboard", Show: 1, Status: 1},
+		{Id: 1, Name: "控制台", GuardName: "admin", Icon: "icon-home", Type: "default", Pid: 0, Sort: -1, Path: "/dashboard", Show: 1, Status: 1},
 		{Id: 2, Name: "主页", GuardName: "admin", Icon: "", Type: "engine", Pid: 1, Sort: 0, Path: "admin/dashboard/index", Show: 1, Status: 1},
 		{Id: 3, Name: "管理员", GuardName: "admin", Icon: "icon-admin", Type: "default", Pid: 0, Sort: 0, Path: "/admin", Show: 1, Status: 1},
 		{Id: 4, Name: "管理员列表", GuardName: "admin", Icon: "", Type: "engine", Pid: 3, Sort: 0, Path: "admin/admin/index", Show: 1, Status: 1},
@@ -67,6 +67,8 @@ func (p *Seed) menuTableSeeder() {
 		{Id: 15, Name: "图片管理", GuardName: "admin", Icon: "", Type: "engine", Pid: 13, Sort: 0, Path: "admin/picture/index", Show: 1, Status: 1},
 		{Id: 16, Name: "我的账号", GuardName: "admin", Icon: "icon-user", Type: "default", Pid: 0, Sort: 0, Path: "/account", Show: 1, Status: 1},
 		{Id: 17, Name: "个人设置", GuardName: "admin", Icon: "", Type: "engine", Pid: 16, Sort: 0, Path: "admin/account/setting-form", Show: 1, Status: 1},
+		{Id: 18, Name: "服务端", GuardName: "admin", Icon: "icon-sever", Type: "default", Pid: 0, Sort: -1, Path: "/server", Show: 1, Status: 1},
+		{Id: 19, Name: "服务列表", GuardName: "admin", Icon: "", Type: "engine", Pid: 18, Sort: 0, Path: "admin/server/index", Show: 1, Status: 1},
 	}
 
 	(&db.Model{}).DB().Create(&seeders)
