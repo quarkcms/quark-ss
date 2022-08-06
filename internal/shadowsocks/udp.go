@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/quarkcms/quark-go/internal/models"
 	"github.com/quarkcms/quark-go/pkg/framework/socks"
 )
 
@@ -119,7 +120,7 @@ func udpSocksLocal(laddr, server string, shadow func(net.PacketConn) net.PacketC
 }
 
 // Listen on addr for encrypted packets and basically do UDP NAT.
-func udpRemote(addr string, shadow func(net.PacketConn) net.PacketConn) {
+func udpRemote(serverId int, serverStatus chan map[int]bool, addr string, shadow func(net.PacketConn) net.PacketConn) {
 	c, err := net.ListenPacket("udp", addr)
 	if err != nil {
 		logf("UDP remote listen error: %v", err)
@@ -133,41 +134,56 @@ func udpRemote(addr string, shadow func(net.PacketConn) net.PacketConn) {
 
 	logf("listening UDP on %s", addr)
 	for {
-		n, raddr, err := c.ReadFrom(buf)
-		if err != nil {
-			logf("UDP remote read error: %v", err)
-			continue
+		serverInfo := (&models.Server{}).Info(serverId)
+		if serverInfo.Status == 0 {
+			c.Close()
+			return
 		}
 
-		tgtAddr := socks.SplitAddr(buf[:n])
-		if tgtAddr == nil {
-			logf("failed to split target address from packet: %q", buf[:n])
-			continue
-		}
+		select {
+		case status := <-serverStatus:
+			if status[serverId] {
+				c.Close()
+				return
+			}
+		default:
 
-		tgtUDPAddr, err := net.ResolveUDPAddr("udp", tgtAddr.String())
-		if err != nil {
-			logf("failed to resolve target UDP address: %v", err)
-			continue
-		}
-
-		payload := buf[len(tgtAddr):n]
-
-		pc := nm.Get(raddr.String())
-		if pc == nil {
-			pc, err = net.ListenPacket("udp", "")
+			n, raddr, err := c.ReadFrom(buf)
 			if err != nil {
-				logf("UDP remote listen error: %v", err)
+				logf("UDP remote read error: %v", err)
 				continue
 			}
 
-			nm.Add(raddr, c, pc, remoteServer)
-		}
+			tgtAddr := socks.SplitAddr(buf[:n])
+			if tgtAddr == nil {
+				logf("failed to split target address from packet: %q", buf[:n])
+				continue
+			}
 
-		_, err = pc.WriteTo(payload, tgtUDPAddr) // accept only UDPAddr despite the signature
-		if err != nil {
-			logf("UDP remote write error: %v", err)
-			continue
+			tgtUDPAddr, err := net.ResolveUDPAddr("udp", tgtAddr.String())
+			if err != nil {
+				logf("failed to resolve target UDP address: %v", err)
+				continue
+			}
+
+			payload := buf[len(tgtAddr):n]
+
+			pc := nm.Get(raddr.String())
+			if pc == nil {
+				pc, err = net.ListenPacket("udp", "")
+				if err != nil {
+					logf("UDP remote listen error: %v", err)
+					continue
+				}
+
+				nm.Add(raddr, c, pc, remoteServer)
+			}
+
+			_, err = pc.WriteTo(payload, tgtUDPAddr) // accept only UDPAddr despite the signature
+			if err != nil {
+				logf("UDP remote write error: %v", err)
+				continue
+			}
 		}
 	}
 }

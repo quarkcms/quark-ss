@@ -14,10 +14,11 @@ import (
 var verbose = true
 var TCPCork = true
 var UDPTimeout = 5 * time.Minute
+var serverStatus = make(chan map[int]bool)
 
-func Start() {
-
-	serverInfo := (&models.Server{}).Info(1)
+// 开启服务
+func Start(id int) {
+	serverInfo := (&models.Server{}).Info(id)
 
 	addr := "ss://" + serverInfo.EncryptType + ":" + serverInfo.Password + "@:" + serverInfo.Port
 	cipher := ""
@@ -60,13 +61,22 @@ func Start() {
 	}
 
 	if flagsUDP {
-		go udpRemote(udpAddr, ciph.PacketConn)
+		go udpRemote(serverInfo.Id, serverStatus, udpAddr, ciph.PacketConn)
 	}
 	if flagsTcp {
-		go tcpRemote(addr, ciph.StreamConn)
+		go tcpRemote(serverInfo.Id, serverStatus, addr, ciph.StreamConn)
 	}
 
 	killPlugin()
+}
+
+// 停止服务
+func Stop(id int) {
+	go func() {
+		serverStatus <- map[int]bool{
+			id: true,
+		}
+	}()
 }
 
 func parseURL(s string) (addr, cipher, password string, err error) {

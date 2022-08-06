@@ -93,7 +93,7 @@ func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(
 }
 
 // Listen on addr for incoming connections.
-func tcpRemote(addr string, shadow func(net.Conn) net.Conn) {
+func tcpRemote(serverId int, serverStatus chan map[int]bool, addr string, shadow func(net.Conn) net.Conn) {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		logf("failed to listen on %s: %v", addr, err)
@@ -108,37 +108,45 @@ func tcpRemote(addr string, shadow func(net.Conn) net.Conn) {
 			continue
 		}
 
-		go func() {
-			defer c.Close()
-			if TCPCork {
-				c = timedCork(c, 10*time.Millisecond, 1280)
+		select {
+		case status := <-serverStatus:
+			if status[serverId] {
+				l.Close()
+				return
 			}
-			sc := shadow(c)
-
-			tgt, err := socks.ReadAddr(sc)
-			if err != nil {
-				logf("failed to get target address from %v: %v", c.RemoteAddr(), err)
-				// drain c to avoid leaking server behavioral features
-				// see https://www.ndss-symposium.org/ndss-paper/detecting-probe-resistant-proxies/
-				_, err = io.Copy(ioutil.Discard, c)
-				if err != nil {
-					logf("discard error: %v", err)
+		default:
+			go func() {
+				defer c.Close()
+				if TCPCork {
+					c = timedCork(c, 10*time.Millisecond, 1280)
 				}
-				return
-			}
+				sc := shadow(c)
 
-			rc, err := net.Dial("tcp", tgt.String())
-			if err != nil {
-				logf("failed to connect to target: %v", err)
-				return
-			}
-			defer rc.Close()
+				tgt, err := socks.ReadAddr(sc)
+				if err != nil {
+					logf("failed to get target address from %v: %v", c.RemoteAddr(), err)
+					// drain c to avoid leaking server behavioral features
+					// see https://www.ndss-symposium.org/ndss-paper/detecting-probe-resistant-proxies/
+					_, err = io.Copy(ioutil.Discard, c)
+					if err != nil {
+						logf("discard error: %v", err)
+					}
+					return
+				}
 
-			logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
-			if err = relay(sc, rc); err != nil {
-				logf("relay error: %v", err)
-			}
-		}()
+				rc, err := net.Dial("tcp", tgt.String())
+				if err != nil {
+					logf("failed to connect to target: %v", err)
+					return
+				}
+				defer rc.Close()
+
+				logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
+				if err = relay(sc, rc); err != nil {
+					logf("relay error: %v", err)
+				}
+			}()
+		}
 	}
 }
 

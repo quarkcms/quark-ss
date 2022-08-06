@@ -18,7 +18,6 @@ var Commands = []interface{}{
 	(&commands.Migrate{}).Init(),
 	(&commands.DBSeed{}).Init(),
 	(&commands.StorageLink{}).Init(),
-	(&commands.Shadowsocks{}).Init(),
 }
 
 // 执行命令

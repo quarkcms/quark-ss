@@ -66,7 +66,7 @@ func (p *Server) Fields(c *fiber.Ctx) []interface{} {
 				},
 			),
 
-		field.Number("port", "端口").
+		field.Text("port", "端口").
 			SetRules(
 				[]string{
 					"required",
@@ -83,8 +83,8 @@ func (p *Server) Fields(c *fiber.Ctx) []interface{} {
 		field.Switch("status", "状态").
 			SetTrueValue("启用").
 			SetFalseValue("禁用").
-			SetEditable(true).
-			SetDefault(true),
+			SetDefault(false).
+			OnlyOnIndex(),
 	}
 }
 
@@ -102,9 +102,7 @@ func (p *Server) Actions(c *fiber.Ctx) []interface{} {
 		(&actions.Import{}).Init(),
 		(&actions.CreateLink{}).Init(p.Title),
 		(&actions.Delete{}).Init("批量删除"),
-		(&actions.Disable{}).Init("批量禁用"),
-		(&actions.Enable{}).Init("批量启用"),
-		(&actions.ChangeStatus{}).Init(),
+		(&actions.ChangeServerStatus{}).Init(),
 		(&actions.EditLink{}).Init("编辑"),
 		(&actions.Delete{}).Init("删除"),
 		(&actions.FormSubmit{}).Init(),
