@@ -46,15 +46,21 @@ func (p *Server) Fields(c *fiber.Ctx) []interface{} {
 				},
 			),
 
-		field.Text("encrypt_type", "加密方式").
+		field.Select("encrypt_type", "加密方式").
+			SetOptions([]map[string]interface{}{
+				{"label": "不加密", "value": "DUMMY"},
+				{"label": "chacha20-ietf-poly1305", "value": "CHACHA20-IETF-POLY1305"},
+				{"label": "aes-128-gcm", "value": "AES-128-GCM"},
+				{"label": "aes-256-gcm", "value": "AES-256-GCM"},
+			}).
 			SetRules(
 				[]string{
 					"required",
 				},
 				map[string]string{
-					"required": "加密方式必须填写",
+					"required": "请选择加密方式",
 				},
-			),
+			).SetHelp("建议选择aes-256-gcm加密方式"),
 
 		field.Text("password", "密码").
 			SetRules(
